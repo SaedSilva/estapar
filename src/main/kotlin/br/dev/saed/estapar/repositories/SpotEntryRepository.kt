@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository
 @Repository
 interface SpotEntryRepository: JpaRepository<SpotEntry, Long> {
     fun findByGarageEntryLicensePlateAndGarageOutIsNull(licensePlate: String): SpotEntry?
+
+    fun findBySpotIdAndGarageOutIsNull(spotId: Long): SpotEntry?
 }

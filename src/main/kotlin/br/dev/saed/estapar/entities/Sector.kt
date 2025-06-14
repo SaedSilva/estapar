@@ -11,7 +11,7 @@ import java.time.LocalTime
 class Sector(
     @Id
     val sector: String? = null,
-    @Column(columnDefinition = "decimal(10, 4)")
+    @Column(columnDefinition = "decimal(10, 2)")
     val basePrice: BigDecimal,
     val maxCapacity: Int,
     val openHour: LocalTime,
@@ -20,6 +20,4 @@ class Sector(
 
     @OneToMany(mappedBy = "sector")
     val spots: List<Spot> = emptyList(),
-) {
-
-}
+)

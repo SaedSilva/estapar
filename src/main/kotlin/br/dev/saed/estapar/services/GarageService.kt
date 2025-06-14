@@ -9,10 +9,8 @@ import br.dev.saed.estapar.repositories.*
 import br.dev.saed.estapar.services.execeptions.SectorLimitExceededException
 import br.dev.saed.estapar.services.execeptions.SpotOccupiedException
 import jakarta.persistence.EntityNotFoundException
-import jakarta.transaction.Transactional
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
@@ -26,39 +24,39 @@ class GarageService(
     private val garageEntryRepository: GarageEntryRepository,
     private val spotEntryRepository: SpotEntryRepository,
     private val garageOutRepository: GarageOutRepository,
+    private val garageCalculatorService: GarageCalculatorService,
 ) {
 
     @Transactional
     suspend fun setupInitialData(dto: GarageResponse) {
-        withContext(Dispatchers.IO) {
-            val sectors = dto.garage.map { response ->
-                response.toEntity()
-            }
-            sectorRepository.saveAll(sectors)
+        val sectors = dto.garage.map { response ->
+            response.toEntity()
+        }
+        sectorRepository.saveAll(sectors)
 
-            val spots = dto.spots.map { response ->
-                response.toEntity()
-            }
-            spotRepository.saveAll(spots)
+        val spots = dto.spots.map { response ->
+            response.toEntity()
+        }
+        spotRepository.saveAll(spots)
+    }
+
+
+    suspend fun handleEvent(webHookRequest: WebHookRequest): WebHookResponse {
+        return when (webHookRequest) {
+            is GarageEntryRequest -> garageEntry(webHookRequest)
+            is SpotEntryRequest -> spotEntry(webHookRequest)
+            is GarageOutRequest -> garageOut(webHookRequest)
         }
     }
+
 
     @Transactional
-    suspend fun handleEvent(webHookRequest: WebHookRequest): WebHookResponse {
-        return withContext(Dispatchers.IO) {
-            when (webHookRequest) {
-                is GarageEntryRequest -> garageEntry(webHookRequest)
-                is SpotEntryRequest -> spotEntry(webHookRequest)
-                is GarageOutRequest -> garageOut(webHookRequest)
-            }
-        }
-    }
-
-    private fun garageEntry(request: GarageEntryRequest): GarageEntryResponse {
+    internal suspend fun garageEntry(request: GarageEntryRequest): GarageEntryResponse {
         return GarageEntryResponse.fromEntity(garageEntryRepository.save(request.toEntity()))
     }
 
-    private fun spotEntry(request: SpotEntryRequest): SpotEntryResponse {
+    @Transactional
+    internal suspend fun spotEntry(request: SpotEntryRequest): SpotEntryResponse {
         val spot = spotRepository.findSpotByLatAndLng(request.lat, request.lng)
             ?: throw EntityNotFoundException("Spot not found at coordinates (${request.lat}, ${request.lng})")
 
@@ -66,7 +64,10 @@ class GarageService(
             throw SpotOccupiedException("Spot at coordinates (${request.lat}, ${request.lng}) is already occupied")
         }
 
-        val occupation = sectorRepository.getActualOccupation(spot.sector.sector ?: "")
+        val occupation = sectorRepository.getActualOccupation(
+            spot.sector.sector
+                ?: throw EntityNotFoundException("Sector not found for spot at coordinates (${request.lat}, ${request.lng})")
+        )
 
         if (occupation >= 100.0f) {
             throw SectorLimitExceededException("Park lotted :)")
@@ -77,7 +78,6 @@ class GarageService(
 
         val spotEntry = SpotEntry(
             actualOccupation = occupation,
-            timeParked = Instant.now(),
             spot = spot,
             garageEntry = garageEntry,
         )
@@ -94,7 +94,8 @@ class GarageService(
         return SpotEntryResponse.fromEntity(spotEntryRepository.save(spotEntry))
     }
 
-    private fun garageOut(request: GarageOutRequest): GarageOutResponse {
+    @Transactional
+    internal suspend fun garageOut(request: GarageOutRequest): GarageOutResponse {
         val spotEntry =
             spotEntryRepository.findByGarageEntryLicensePlateAndGarageOutIsNull(request.licensePlate)
         val exitTime = LocalDateTime.parse(request.exitTime).toInstant(ZoneOffset.UTC)
@@ -113,7 +114,12 @@ class GarageService(
         }
 
 
-        val calculatedValue = calculateValue(spotEntry, exitTime)
+        val calculatedValue = garageCalculatorService.calculateValue(
+            occupation = spotEntry.actualOccupation,
+            basePrice = spotEntry.spot.sector.basePrice,
+            entryTime = spotEntry.garageEntry.entryTime,
+            outTime = exitTime
+        )
 
         val garageOut = GarageOut(
             exitTime = exitTime,
@@ -131,11 +137,11 @@ class GarageService(
             sector = spot.sector,
         )
         spotRepository.save(updatedSpot)
-
         return GarageOutResponse.fromEntity(garageOutRepository.save(garageOut))
     }
 
-    fun licensePlateStatus(request: LicensePlateStatusRequest): LicensePlateStatusResponse {
+    @Transactional(readOnly = true)
+    suspend fun licensePlateStatus(request: LicensePlateStatusRequest): LicensePlateStatusResponse {
         val garageEntry = garageEntryRepository.findGarageEntryByLicensePlateAndGarageOutIsNull(request.licensePlate)
             ?: throw EntityNotFoundException("Garage entry not found for license plate ${request.licensePlate}")
 
@@ -144,50 +150,78 @@ class GarageService(
 
         val now = Instant.now()
 
-        val actualValue = calculateValue(spotEntry, now)
+        val actualValue = garageCalculatorService.calculateValue(
+            occupation = spotEntry.actualOccupation,
+            basePrice = spotEntry.spot.sector.basePrice,
+            entryTime = spotEntry.garageEntry.entryTime,
+            outTime = now
+        )
 
-        val timeParked = Duration.between(spotEntry.garageEntry.entryTime, now).toMinutes()
+        val timeParked = Duration.between(spotEntry.garageEntry.entryTime, now)
+        val timeParkedFormatted = "${timeParked.toHours()}:${timeParked.toMinutesPart()}:${timeParked.toSecondsPart()}"
 
         return LicensePlateStatusResponse(
             licensePlate = garageEntry.licensePlate,
             priceUntilNow = actualValue,
             entryTime = garageEntry.entryTime,
-            timeParked = spotEntry.timeParked,
+            timeParked = timeParkedFormatted,
             lat = spotEntry.spot.lat,
             lng = spotEntry.spot.lng,
         )
     }
 
-    private fun calculateValue(entry: SpotEntry, time: Instant): BigDecimal {
-        val occupation = entry.actualOccupation
-        val basePrice = entry.spot.sector.basePrice
-        val entryTime = entry.garageEntry.entryTime
-        val hoursFloat = (time.toEpochMilli() - entryTime.toEpochMilli()).toFloat() / (1000 * 60 * 60)
-        val totalPrice = basePrice.multiply(BigDecimal.valueOf(hoursFloat.toDouble()))
-        return applyDynamicPrice(totalPrice, occupation)
+    @Transactional(readOnly = true)
+    suspend fun spotStatus(request: SpotStatusRequest): SpotStatusResponse {
+        val spot = spotRepository.findSpotByLatAndLng(request.lat, request.lng)
+            ?: throw EntityNotFoundException("Spot not found at coordinates (${request.lat}, ${request.lng})")
+
+        if (!spot.occupied) {
+            return SpotStatusResponse(
+                occupied = false,
+                licensePlate = null,
+                priceUntilNow = BigDecimal.ZERO,
+                entryTime = null,
+                timeParked = null,
+            )
+        }
+
+        val spotId = spot.id
+            ?: throw EntityNotFoundException("Spot ID not found for coordinates (${request.lat}, ${request.lng})")
+        val spotEntry = spotEntryRepository.findBySpotIdAndGarageOutIsNull(spotId)
+            ?: throw EntityNotFoundException("Spot entry not found for spot ID $spotId")
+        val garageEntry = spotEntry.garageEntry
+
+        val now = Instant.now()
+
+        val price = garageCalculatorService.calculateValue(
+            occupation = spotEntry.actualOccupation,
+            basePrice = spot.sector.basePrice,
+            entryTime = garageEntry.entryTime,
+            outTime = now,
+        )
+
+        val timeParked = Duration.between(spotEntry.garageEntry.entryTime, now)
+        val timeParkedFormatted = "${timeParked.toHours()}:${timeParked.toMinutesPart()}:${timeParked.toSecondsPart()}"
+
+        return SpotStatusResponse(
+            occupied = true,
+            licensePlate = garageEntry.licensePlate,
+            priceUntilNow = price,
+            entryTime = garageEntry.entryTime,
+            timeParked = timeParkedFormatted
+        )
     }
 
-    private fun applyDynamicPrice(value: BigDecimal, occupation: Float): BigDecimal {
-        return when {
-            occupation < 0.25f -> {
-                value.multiply(BigDecimal("0.9"))
-            }
-
-            occupation < 0.50f -> {
-                value
-            }
-
-            occupation < 0.75f -> {
-                value.multiply(BigDecimal("1.10"))
-            }
-
-            occupation <= 100.0f -> {
-                value.multiply(BigDecimal("1.25"))
-            }
-
-            else -> {
-                throw IllegalArgumentException("Occupation percentage must be between 0 and 100")
-            }
-        }
+    @Transactional(readOnly = true)
+    suspend fun revenue(body: RevenueRequest): RevenueResponse {
+        val total = garageOutRepository.findTotalValueBySectorAndExitDate(
+            sector = body.sector,
+            date = body.date
+        ) ?: BigDecimal("0.00")
+        return RevenueResponse(
+            amount = total,
+            currency = "BRL", // TODO em nenhum lugar antes foi definido o tipo de moeda
+            timestamp = Instant.now(),
+        )
     }
 }

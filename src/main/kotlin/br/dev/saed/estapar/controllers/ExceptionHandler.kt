@@ -7,15 +7,18 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.context.request.WebRequest
+import org.springframework.web.bind.annotation.RestControllerAdvice
 
-@ControllerAdvice
+/**
+ * Global exception handler for the Estapar application.
+ */
+
+@RestControllerAdvice
 class ExceptionHandler {
 
     @ExceptionHandler(SectorLimitExceededException::class)
     fun handleSectorLimitExceededException(
-        exception: SectorLimitExceededException,
-        request: WebRequest
+        exception: SectorLimitExceededException
     ): ResponseEntity<String> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(exception.message ?: "Sector limit exceeded")
@@ -23,8 +26,7 @@ class ExceptionHandler {
 
     @ExceptionHandler(SpotOccupiedException::class)
     fun handleSpotOccupiedException(
-        exception: SpotOccupiedException,
-        request: WebRequest
+        exception: SpotOccupiedException
     ): ResponseEntity<String> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(exception.message ?: "Spot is already occupied")
@@ -32,8 +34,7 @@ class ExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException::class)
     fun handleEntityNotFoundException(
-        exception: EntityNotFoundException,
-        request: WebRequest
+        exception: EntityNotFoundException
     ): ResponseEntity<String> {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .body(exception.message ?: "Entity not found")

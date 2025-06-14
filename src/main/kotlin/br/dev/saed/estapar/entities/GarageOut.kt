@@ -13,7 +13,7 @@ class GarageOut(
     @Column(columnDefinition = "TIMESTAMP WITHOUT TIME ZONE")
     val exitTime: Instant,
 
-    @Column(columnDefinition = "DECIMAL(10, 4)")
+    @Column(columnDefinition = "DECIMAL(10, 2)")
     val value: BigDecimal,
 
     @OneToOne

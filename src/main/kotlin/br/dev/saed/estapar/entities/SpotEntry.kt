@@ -1,7 +1,6 @@
 package br.dev.saed.estapar.entities
 
 import jakarta.persistence.*
-import java.time.Instant
 
 @Entity(name = "tb_spot_entry")
 class SpotEntry(
@@ -10,8 +9,6 @@ class SpotEntry(
     val id: Long? = null,
 
     val actualOccupation: Float,
-
-    val timeParked: Instant,
 
     @ManyToOne
     @JoinColumn(name = "spot_id", referencedColumnName = "id", unique = false)
