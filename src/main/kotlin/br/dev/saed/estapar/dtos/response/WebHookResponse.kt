@@ -63,7 +63,7 @@ data class GarageOutResponse(
                 id = entity.id ?: 0L,
                 exitTime = entity.exitTime,
                 licensePlate = entity.garageEntry.licensePlate,
-                totalValue = entity.value
+                totalValue = entity.totalValue
             )
         }
     }

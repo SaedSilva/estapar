@@ -7,18 +7,18 @@ import java.time.Instant
 class GarageEntry(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    var id: Long? = null,
 
-    val licensePlate: String,
+    var licensePlate: String,
 
     @Column(columnDefinition = "TIMESTAMP WITHOUT TIME ZONE")
-    val entryTime: Instant,
+    var entryTime: Instant,
 
     @OneToOne(mappedBy = "garageEntry")
-    val spotEntry: SpotEntry? = null,
+    var spotEntry: SpotEntry? = null,
 
     @OneToOne(mappedBy = "garageEntry")
-    val garageOut: GarageOut? = null,
+    var garageOut: GarageOut? = null,
 ) {
 
 }

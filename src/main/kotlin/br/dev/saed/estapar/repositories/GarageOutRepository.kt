@@ -21,5 +21,6 @@ interface GarageOutRepository : JpaRepository<GarageOut, Long> {
         GROUP BY SCT.sector
     """
     )
+
     fun findTotalValueBySectorAndExitDate(sector: String, date: LocalDate): BigDecimal?
 }

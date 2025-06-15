@@ -32,13 +32,13 @@ sealed class WebHookRequest
 @JsonTypeName("ENTRY")
 data class GarageEntryRequest(
     @JsonProperty("entry_time")
-    val entryTime: String,
+    val entryTime: LocalDateTime,
     @JsonProperty("license_plate")
     val licensePlate: String,
 ) : WebHookRequest()
 
 fun GarageEntryRequest.toEntity() = GarageEntry(
-    entryTime = LocalDateTime.parse(entryTime).toInstant(ZoneOffset.UTC),
+    entryTime = entryTime.toInstant(ZoneOffset.UTC),
     licensePlate = licensePlate
 )
 
@@ -53,7 +53,7 @@ data class SpotEntryRequest(
 @JsonTypeName("EXIT")
 data class GarageOutRequest(
     @JsonProperty("exit_time")
-    val exitTime: String,
+    val exitTime: LocalDateTime,
     @JsonProperty("license_plate")
     val licensePlate: String,
 ) : WebHookRequest()

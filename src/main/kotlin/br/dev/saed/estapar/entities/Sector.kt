@@ -10,13 +10,13 @@ import java.time.LocalTime
 @Entity(name = "tb_sector")
 class Sector(
     @Id
-    val sector: String? = null,
+    var sector: String? = null,
     @Column(columnDefinition = "decimal(10, 2)")
-    val basePrice: BigDecimal,
-    val maxCapacity: Int,
-    val openHour: LocalTime,
-    val closeHour: LocalTime,
-    val durationLimitMinutes: Int,
+    var basePrice: BigDecimal,
+    var maxCapacity: Int,
+    var openHour: LocalTime,
+    var closeHour: LocalTime,
+    var durationLimitMinutes: Int,
 
     @OneToMany(mappedBy = "sector")
     val spots: List<Spot> = emptyList(),

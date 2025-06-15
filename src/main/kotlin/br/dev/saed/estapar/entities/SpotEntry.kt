@@ -6,20 +6,20 @@ import jakarta.persistence.*
 class SpotEntry(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    var id: Long? = null,
 
-    val actualOccupation: Float,
+    var actualOccupation: Float,
 
     @ManyToOne
     @JoinColumn(name = "spot_id", referencedColumnName = "id", unique = false)
-    val spot: Spot,
+    var spot: Spot,
 
     @OneToOne
     @JoinColumn(name = "garage_entry_id", referencedColumnName = "id")
-    val garageEntry: GarageEntry,
+    var garageEntry: GarageEntry,
 
     @OneToOne(mappedBy = "spotEntry")
-    val garageOut: GarageOut? = null,
+    var garageOut: GarageOut? = null,
 ) {
 
 }

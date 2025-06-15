@@ -8,21 +8,21 @@ import java.time.Instant
 class GarageOut(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    var id: Long? = null,
 
     @Column(columnDefinition = "TIMESTAMP WITHOUT TIME ZONE")
-    val exitTime: Instant,
+    var exitTime: Instant,
 
     @Column(columnDefinition = "DECIMAL(10, 2)")
-    val value: BigDecimal,
+    var totalValue: BigDecimal,
 
     @OneToOne
     @JoinColumn(name = "garage_entry_id", referencedColumnName = "id")
-    val garageEntry: GarageEntry,
+    var garageEntry: GarageEntry,
 
     @OneToOne
     @JoinColumn(name = "spot_entry_id", referencedColumnName = "id")
-    val spotEntry: SpotEntry? = null,
+    var spotEntry: SpotEntry? = null,
 ) {
 
 }

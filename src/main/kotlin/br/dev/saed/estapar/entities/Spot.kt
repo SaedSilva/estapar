@@ -6,14 +6,14 @@ import jakarta.persistence.*
 class Spot(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
-    val lat: Double,
-    val lng: Double,
-    val occupied: Boolean,
+    var id: Long? = null,
+    var lat: Double,
+    var lng: Double,
+    var occupied: Boolean,
 
     @ManyToOne
     @JoinColumn(name = "sector", nullable = false, referencedColumnName = "sector")
-    val sector: Sector,
+    var sector: Sector,
 ) {
 
 }

@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneOffset
 
 @Service
@@ -52,7 +51,12 @@ class GarageService(
 
     @Transactional
     internal suspend fun garageEntry(request: GarageEntryRequest): GarageEntryResponse {
-        return GarageEntryResponse.fromEntity(garageEntryRepository.save(request.toEntity()))
+        val existingEntry = garageEntryRepository.findGarageEntryByLicensePlateAndGarageOutIsNull(request.licensePlate)
+        if (existingEntry != null) {
+            throw EntityNotFoundException("Garage entry already exists for license plate ${request.licensePlate}")
+        }
+        val entry = garageEntryRepository.save(request.toEntity())
+        return GarageEntryResponse.fromEntity(entry)
     }
 
     @Transactional
@@ -82,15 +86,9 @@ class GarageService(
             garageEntry = garageEntry,
         )
 
-        val updatedSpot = Spot(
-            id = spot.id,
-            lat = spot.lat,
-            lng = spot.lng,
-            occupied = true,
-            sector = spot.sector,
-        )
+        spot.occupied = true
 
-        spotRepository.save(updatedSpot)
+        spotRepository.save(spot)
         return SpotEntryResponse.fromEntity(spotEntryRepository.save(spotEntry))
     }
 
@@ -98,7 +96,7 @@ class GarageService(
     internal suspend fun garageOut(request: GarageOutRequest): GarageOutResponse {
         val spotEntry =
             spotEntryRepository.findByGarageEntryLicensePlateAndGarageOutIsNull(request.licensePlate)
-        val exitTime = LocalDateTime.parse(request.exitTime).toInstant(ZoneOffset.UTC)
+        val exitTime = request.exitTime.toInstant(ZoneOffset.UTC)
 
         if (spotEntry == null) {
             val garageEntry =
@@ -106,7 +104,7 @@ class GarageService(
                     ?: throw EntityNotFoundException("Garage entry not found for license plate ${request.licensePlate}")
             val garageOut = GarageOut(
                 exitTime = exitTime,
-                value = BigDecimal.ZERO,
+                totalValue = BigDecimal.ZERO,
                 garageEntry = garageEntry,
                 spotEntry = null,
             )
@@ -123,20 +121,14 @@ class GarageService(
 
         val garageOut = GarageOut(
             exitTime = exitTime,
-            value = calculatedValue,
+            totalValue = calculatedValue,
             garageEntry = spotEntry.garageEntry,
             spotEntry = spotEntry,
         )
 
         val spot = spotEntry.spot
-        val updatedSpot = Spot(
-            id = spot.id,
-            lat = spot.lat,
-            lng = spot.lng,
-            occupied = false,
-            sector = spot.sector,
-        )
-        spotRepository.save(updatedSpot)
+        spot.occupied = false
+        spotRepository.save(spot)
         return GarageOutResponse.fromEntity(garageOutRepository.save(garageOut))
     }
 
@@ -218,6 +210,7 @@ class GarageService(
             sector = body.sector,
             date = body.date
         ) ?: BigDecimal("0.00")
+
         return RevenueResponse(
             amount = total,
             currency = "BRL", // TODO em nenhum lugar antes foi definido o tipo de moeda

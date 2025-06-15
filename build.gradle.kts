@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "br.dev.saed"
-version = "0.0.1-SNAPSHOT"
+version = "0.0.1"
 
 java {
     toolchain {
@@ -42,6 +42,7 @@ dependencies {
 //    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.13.1")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     runtimeOnly("org.postgresql:postgresql")
+    runtimeOnly("com.h2database:h2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
