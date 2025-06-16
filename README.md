@@ -73,6 +73,26 @@ Documentação da api disponível no swagger: http://localhost:3003/swagger-ui/i
 
 ### Informações adicionais:
 
+- O cálculo de valores e faturamento está sendo feito da seguinte forma:
+
+Veículo entra na garagem -> é registrado o horário de entrada.
+
+Veiculo entra na vaga -> é registrado a ocupação daquele setor que contém a vaga.
+
+Veículo sai da garagem -> é registrado o horário de saída e o valor é calculado com base no tempo de permanência do veículo e a ocupação daquele setor.
+
+Obs: Está sendo considerado que o valor base do setor é em minutos
+
+Exemplo:
+
+Valor base do setor: R$ 1,00 por minuto.
+
+Tempo de permanência do veículo: 10 minutos.
+
+Ocupação do setor: 90%.
+
+#### Total = R\$ 1,00 * 10 minutos * 1.25 = R$ 12,50
+
 - Evento de entrada na garagem, no teste o formato do campo `entry_time` é um Instant, mas o simulador envia um LocalDateTime.
 
 Teste:
