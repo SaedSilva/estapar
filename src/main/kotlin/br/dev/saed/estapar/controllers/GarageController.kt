@@ -4,12 +4,18 @@ import br.dev.saed.estapar.dtos.request.LicensePlateStatusRequest
 import br.dev.saed.estapar.dtos.request.RevenueRequest
 import br.dev.saed.estapar.dtos.request.SpotStatusRequest
 import br.dev.saed.estapar.dtos.request.WebHookRequest
+import br.dev.saed.estapar.dtos.response.GarageEntryResponse
+import br.dev.saed.estapar.dtos.response.GarageOutResponse
 import br.dev.saed.estapar.dtos.response.LicensePlateStatusResponse
 import br.dev.saed.estapar.dtos.response.RevenueResponse
+import br.dev.saed.estapar.dtos.response.SpotEntryResponse
 import br.dev.saed.estapar.dtos.response.SpotStatusResponse
 import br.dev.saed.estapar.dtos.response.WebHookResponse
 import br.dev.saed.estapar.services.GarageService
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.ExampleObject
+import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import org.springframework.http.HttpStatus
@@ -31,12 +37,55 @@ class GarageController(
         value = [
             ApiResponse(
                 responseCode = "201",
-                description = "Event processed successfully"
+                description = "Event processed successfully",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        examples = [
+                            ExampleObject(
+                                name = "GarageEntryResponse",
+                                value = """
+                                    {
+                                        "licensePlate": "ABC1234",
+                                        "entryTime": "2023-10-01T12:00:00Z"
+                                    }
+                                """
+                            ),
+                            ExampleObject(
+                                name = "SpotEntryResponse",
+                                value = """
+                                    {
+                                        "licensePlate": "ABC1234",
+                                        "spotId": 1,
+                                        "entryTime": "2023-10-01T12:05:00Z"
+                                    }
+                                """
+                            ),
+                            ExampleObject(
+                                name = "GarageOutResponse",
+                                value = """
+                                    {
+                                        "licensePlate": "ABC1234",
+                                        "exitTime": "2023-10-01T14:00:00Z",
+                                        "totalAmount": 20.00
+                                    }
+                                """
+                            )
+                        ],
+                        schema = Schema(
+                            oneOf = [
+                                GarageEntryResponse::class,
+                                SpotEntryResponse::class,
+                                GarageOutResponse::class
+                            ]
+                        )
+                    )
+                ],
             ),
             ApiResponse(
                 responseCode = "400",
                 description = "Bad Request - Invalid event data"
-            ),
+            )
         ]
     )
     @PostMapping("/webhook")

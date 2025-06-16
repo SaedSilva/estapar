@@ -4,9 +4,9 @@ import br.dev.saed.estapar.entities.GarageEntry
 import br.dev.saed.estapar.entities.GarageOut
 import br.dev.saed.estapar.entities.SpotEntry
 import com.fasterxml.jackson.annotation.JsonProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.math.BigDecimal
 import java.time.Instant
-
 
 sealed class WebHookResponse
 
