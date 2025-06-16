@@ -1,30 +1,20 @@
 package br.dev.saed.estapar.controllers
 
-import br.dev.saed.estapar.dtos.request.GarageEntryRequest
-import br.dev.saed.estapar.dtos.request.GarageOutRequest
-import br.dev.saed.estapar.dtos.request.SpotEntryRequest
-import br.dev.saed.estapar.dtos.request.WebHookRequest
-import br.dev.saed.estapar.dtos.response.GarageEntryResponse
-import br.dev.saed.estapar.dtos.response.GarageOutResponse
-import br.dev.saed.estapar.dtos.response.GarageResponse
-import br.dev.saed.estapar.dtos.response.SectorResponse
-import br.dev.saed.estapar.dtos.response.SpotEntryResponse
-import br.dev.saed.estapar.dtos.response.SpotResponse
+import br.dev.saed.estapar.dtos.request.*
+import br.dev.saed.estapar.dtos.response.*
 import br.dev.saed.estapar.services.GarageService
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
-import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.boot.test.web.client.exchange
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
-import org.springframework.http.HttpStatusCode
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.bodyToMono
+import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.ZoneOffset
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -38,21 +28,7 @@ class GarageControllerIT(
     @Autowired
     lateinit var restTemplate: TestRestTemplate
 
-    val garageEntryRequest = GarageEntryRequest(
-        entryTime = LocalDateTime.parse("2023-10-01T10:00:00"),
-        licensePlate = "ABC1234"
-    ) as WebHookRequest
 
-    val spotEntryRequest = SpotEntryRequest(
-        lat = -23.5505,
-        lng = -46.6333,
-        licensePlate = "ABC1234"
-    ) as WebHookRequest
-
-    val garageOutRequest = GarageOutRequest(
-        exitTime = LocalDateTime.parse("2023-10-01T12:00:00"),
-        licensePlate = "ABC1234"
-    ) as WebHookRequest
 
     @Test
     fun `when garage entry and spot entry and garage out are requested sequentially then all return 201 Created`() {
@@ -79,21 +55,134 @@ class GarageControllerIT(
 
         assertEquals(HttpStatus.CREATED, garageEntryResponse.statusCode)
         assertNotNull(garageEntryEntity)
-        assertEquals(1L, garageEntryEntity.id)
         assertEquals("ABC1234", garageEntryEntity.licensePlate)
 
         assertEquals(HttpStatus.CREATED, spotEntryResponse.statusCode)
         assertNotNull(spotEntryEntity)
-        assertEquals(1L, spotEntryEntity.id)
         assertEquals("ABC1234", spotEntryEntity.licensePlate)
 
         assertEquals(HttpStatus.CREATED, garageOutResponse.statusCode)
         assertNotNull(garageOutEntity)
-        assertEquals(1L, garageOutEntity.id)
+        assertEquals("ABC1234", garageOutEntity.licensePlate)
+    }
+
+    @Test
+    fun `when garage entry, spot entry, plate status check, and garage out are requested sequentially then return expected statuses`() {
+        val plateStatusRequest = LicensePlateStatusRequest(
+            licensePlate = "ABC1234",
+        )
+        val garageEntryResponse = restTemplate.postForEntity(
+            "/webhook",
+            garageEntryRequest,
+            GarageEntryResponse::class.java
+        )
+        val garageEntryEntity = garageEntryResponse.body
+
+        val spotEntryResponse = restTemplate.postForEntity(
+            "/webhook",
+            spotEntryRequest,
+            SpotEntryResponse::class.java
+        )
+        val spotEntryEntity = spotEntryResponse.body
+        val plateStatusResponse = restTemplate.postForEntity(
+            "/plate-status",
+            plateStatusRequest,
+            LicensePlateStatusResponse::class.java
+        )
+        val plateStatusEntity = plateStatusResponse.body
+
+        val garageOutResponse = restTemplate.postForEntity(
+            "/webhook",
+            garageOutRequest,
+            GarageOutResponse::class.java
+        )
+        val garageOutEntity = garageOutResponse.body
+
+        assertEquals(HttpStatus.CREATED, garageEntryResponse.statusCode)
+        assertNotNull(garageEntryEntity)
+        assertEquals("ABC1234", garageEntryEntity.licensePlate)
+
+        assertEquals(HttpStatus.CREATED, spotEntryResponse.statusCode)
+        assertNotNull(spotEntryEntity)
+        assertEquals("ABC1234", spotEntryEntity.licensePlate)
+
+        assertEquals(HttpStatus.OK, plateStatusResponse.statusCode)
+        assertNotNull(plateStatusEntity)
+        assertEquals("ABC1234", plateStatusEntity.licensePlate)
+
+        assertEquals(HttpStatus.CREATED, garageOutResponse.statusCode)
+        assertNotNull(garageOutEntity)
+        assertEquals("ABC1234", garageOutEntity.licensePlate)
+    }
+    @Test
+    fun `when garage entry, spot entry, spot status check, and garage out are requested sequentially then return 201 201 200 201 respectively`() {
+        val spotStatusRequest = SpotStatusRequest(
+            lat = -23.5505,
+            lng = -46.6333
+        )
+        val garageEntryResponse = restTemplate.postForEntity(
+            "/webhook",
+            garageEntryRequest,
+            GarageEntryResponse::class.java
+        )
+        val garageEntryEntity = garageEntryResponse.body
+
+        val spotEntryResponse = restTemplate.postForEntity(
+            "/webhook",
+            spotEntryRequest,
+            SpotEntryResponse::class.java
+        )
+        val spotEntryEntity = spotEntryResponse.body
+
+        val spotStatusResponse = restTemplate.postForEntity(
+            "/spot-status",
+            spotStatusRequest,
+            SpotStatusResponse::class.java
+        )
+        val spotStatusEntity = spotStatusResponse.body
+
+        val garageOutResponse = restTemplate.postForEntity(
+            "/webhook",
+            garageOutRequest,
+            GarageOutResponse::class.java
+        )
+        val garageOutEntity = garageOutResponse.body
+
+        assertEquals(HttpStatus.CREATED, garageEntryResponse.statusCode)
+        assertNotNull(garageEntryEntity)
+        assertEquals("ABC1234", garageEntryEntity.licensePlate)
+
+        assertEquals(HttpStatus.CREATED, spotEntryResponse.statusCode)
+        assertNotNull(spotEntryEntity)
+        assertEquals("ABC1234", spotEntryEntity.licensePlate)
+
+        assertEquals(HttpStatus.OK, spotStatusResponse.statusCode)
+        assertNotNull(spotStatusEntity)
+        assertEquals(true, spotStatusEntity.occupied)
+        assertEquals("ABC1234", spotStatusEntity.licensePlate)
+
+        assertEquals(HttpStatus.CREATED, garageOutResponse.statusCode)
+        assertNotNull(garageOutEntity)
         assertEquals("ABC1234", garageOutEntity.licensePlate)
     }
 
     companion object {
+        val garageEntryRequest = GarageEntryRequest(
+            entryTime = LocalDateTime.parse("2025-06-16T10:00:00"),
+            licensePlate = "ABC1234"
+        ) as WebHookRequest
+
+        val spotEntryRequest = SpotEntryRequest(
+            lat = -23.5505,
+            lng = -46.6333,
+            licensePlate = "ABC1234"
+        ) as WebHookRequest
+
+        val garageOutRequest = GarageOutRequest(
+            exitTime = LocalDateTime.parse("2025-06-16T12:00:00"),
+            licensePlate = "ABC1234"
+        ) as WebHookRequest
+
         @BeforeAll
         @JvmStatic
         fun setup(
@@ -139,6 +228,11 @@ class GarageControllerIT(
 
             runBlocking {
                 garageService.setupInitialData(response)
+                for (i in 0..3) {
+                    garageService.garageEntry(garageEntryRequest as GarageEntryRequest)
+                    garageService.spotEntry(spotEntryRequest as SpotEntryRequest)
+                    garageService.garageOut(garageOutRequest as GarageOutRequest)
+                }
             }
         }
 

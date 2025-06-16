@@ -70,3 +70,43 @@ Diagrama do banco de dados:
 ![Diagrama do banco de dados](Estapar_DB_DIAGRAM.png)
 
 Documentação da api disponível no swagger: http://localhost:3003/swagger-ui/index.html
+
+### Informações adicionais:
+
+- Evento de entrada na garagem, no teste o formato do campo `entry_time` é um Instant, mas o simulador envia um LocalDateTime.
+
+Teste:
+```json
+{
+  "license_plate": "ZUL0001",
+  "entry_time": "2025-01-01T12:00:00.000Z",
+  "event_type": "ENTRY"
+}
+```
+Simulador (Note a ausência do Z no final):
+```json
+{
+  "license_plate": "ZUL0001",
+  "entry_time": "2025-01-01T12:00:00.000",
+  "event_type": "ENTRY"
+}
+```
+
+- Evento de saida da garagem, no teste o formato do campo `exit_time` é um Instant, mas o simulador envia um LocalDateTime.
+Teste:
+```json
+{
+  "license_plate": "ZUL0001",
+  "exit_time": "2025-01-01T14:00:00.000Z",
+  "event_type": "EXIT"
+}
+```
+Simulador (Note a ausência do Z no final):
+```json
+{
+  "license_plate": "ZUL0001",
+  "exit_time": "2025-01-01T14:00:00.000",
+  "event_type": "EXIT"
+}
+```
+
