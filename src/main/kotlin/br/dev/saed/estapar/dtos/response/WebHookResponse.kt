@@ -55,6 +55,7 @@ data class GarageOutResponse(
     val exitTime: Instant,
     @JsonProperty("license_plate")
     val licensePlate: String,
+    @JsonProperty("total_value")
     val totalValue: BigDecimal,
 ) : WebHookResponse() {
     companion object {

@@ -20,9 +20,8 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping
 class GarageController(
-    private val service: GarageService
+    var service: GarageService
 ) {
-
 
     @PostMapping("/webhook")
     suspend fun events(@RequestBody body: WebHookRequest): ResponseEntity<WebHookResponse> {
@@ -49,4 +48,5 @@ class GarageController(
         println(body)
         return ResponseEntity.ok(service.revenue(body))
     }
+
 }

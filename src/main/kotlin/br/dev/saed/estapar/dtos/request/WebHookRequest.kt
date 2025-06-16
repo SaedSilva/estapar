@@ -42,7 +42,7 @@ fun GarageEntryRequest.toEntity() = GarageEntry(
     licensePlate = licensePlate
 )
 
-@JsonTypeName
+@JsonTypeName("PARKED")
 data class SpotEntryRequest(
     val lat: Double,
     @JsonProperty("license_plate")

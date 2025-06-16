@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.time.LocalTime
 import kotlin.test.Test
@@ -13,6 +14,7 @@ import kotlin.test.assertNotNull
 
 @ActiveProfiles("test")
 @DataJpaTest
+@Transactional
 class SectorRepositoryIntegrationTest(
 
 ) {

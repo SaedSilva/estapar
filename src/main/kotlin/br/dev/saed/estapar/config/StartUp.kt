@@ -5,6 +5,7 @@ import br.dev.saed.estapar.services.GarageService
 import kotlinx.coroutines.runBlocking
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
@@ -16,6 +17,7 @@ import org.springframework.web.reactive.function.client.bodyToMono
  */
 
 @Component
+@Profile("prod")
 class StartUp(
     private val client: WebClient,
     private val garageService: GarageService

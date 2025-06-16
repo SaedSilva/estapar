@@ -39,6 +39,8 @@ dependencies {
         exclude("org.mockito", "mockito-core")
     }
     testImplementation("io.mockk:mockk:1.14.2")
+    testImplementation("com.ninja-squad:springmockk:4.0.2")
+
 //    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.13.1")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     runtimeOnly("org.postgresql:postgresql")

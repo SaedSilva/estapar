@@ -25,7 +25,8 @@ class GarageCalculatorServiceTest {
             outTime = outTime
         )
 
-        val expected = BigDecimal( "18.00") // 2 hours * 10.00 * 0.9
+        // 120 * 10.00 base price * 0.9 discount factor
+        val expected = BigDecimal("1080.00")
 
         assertEquals(expected = expected, actual = actual)
     }
@@ -44,7 +45,8 @@ class GarageCalculatorServiceTest {
             outTime = outTime
         )
 
-        val expected = BigDecimal("20.00") // 2 hours * 10.00 * 1.0
+        // 120 * 10.00 base price * 1.0 factor
+        val expected = BigDecimal("1200.00")
 
         assertEquals(expected = expected, actual = actual)
     }
@@ -63,7 +65,8 @@ class GarageCalculatorServiceTest {
             outTime = outTime
         )
 
-        val expected = BigDecimal("22.00") // 2 hours * 10.00 * 1.1
+        // 120 * 10.00 base price * 1.10 factor
+        val expected = BigDecimal("1320.00")
 
         assertEquals(expected = expected, actual = actual)
     }
@@ -82,7 +85,8 @@ class GarageCalculatorServiceTest {
             outTime = outTime
         )
 
-        val expected = BigDecimal("25.00") // 2 hours * 10.00 * 1.25
+        // 120 * 10.00 base price * 1.25 factor
+        val expected = BigDecimal("1500.00")
 
         assertEquals(expected, actual)
     }

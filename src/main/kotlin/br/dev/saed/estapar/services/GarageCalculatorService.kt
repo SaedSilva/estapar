@@ -28,8 +28,8 @@ class GarageCalculatorService {
         entryTime: Instant,
         outTime: Instant
     ): BigDecimal {
-        val hours = Duration.between(entryTime, outTime).toSeconds() / 3600.0
-        val totalPrice = basePrice.multiply(BigDecimal.valueOf(hours))
+        val minutes = Duration.between(entryTime, outTime).toMinutes()
+        val totalPrice = basePrice.multiply(BigDecimal(minutes))
         return applyDynamicPrice(totalPrice, occupation).setScale(2, RoundingMode.DOWN)
     }
 
